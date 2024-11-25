@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PGZ Programming Editor</title>
+    <style>
+        /* General Styling */
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: background 0.5s, color 0.5s;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            z-index: 10;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+        }
+
+        .header button, .header select {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            margin-left: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .header button:hover, .header select:hover {
+            background-color: #45a049;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            transition: background 0.5s;
+        }
+
+        textarea {
+            width: 50%;
+            height: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: none;
+            resize: none;
+            font-size: 16px;
+            background-color: #f0f0f0;
+            color: #333;
+            font-family: 'Courier New', monospace;
+            overflow-y: auto;
+        }
+
+        iframe, #outputDiv {
+            width: 50%;
+            height: 100%;
+            border: none;
+            background: white;
+            overflow-y: auto;
+            padding: 10px;
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 14px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        /* Themes */
+        body.light {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        body.light textarea {
+            background: #fff;
+            color: #333;
+        }
+
+        body.dark {
+            background: #121212;
+            color: #e0e0e0;
+        }
+
+        body.dark textarea {
+            background: #1e1e1e;
+            color: #e0e0e0;
+        }
+    </style>
+</head>
+<body class="light">
+    <div class="header">
+        <h1>PGZ Programming Editor</h1>
+        <div>
+            <button id="runButton">Run Code</button>
+            <select id="languageSelector">
+                <option value="html">HTML</option>
+                <option value="python">Python</option>
+                <option value="java">Java</option>
+                <option value="c">C</option>
+                <option value="cpp">C++</option>
+                <option value="csharp">C#</option>
+            </select>
+            <select id="themeSelector">
+                <option value="light">Light Theme</option>
+                <option value="dark">Dark Theme</option>
+            </select>
+        </div>
+    </div>
+    <div class="container">
+        <textarea id="codeEditor" placeholder="Write your code here..."></textarea>
+        <div id="outputDiv">Output will appear here...</div>
+    </div>
+    <div class="footer">
+        Designed by PGZ | Contact: <strong>pp4096703@gmail.com</strong>
+    </div>
+
+    <script>
+        const editor = document.getElementById('codeEditor');
+        const outputDiv = document.getElementById('outputDiv');
+        const runButton = document.getElementById('runButton');
+        const languageSelector = document.getElementById('languageSelector');
+        const themeSelector = document.getElementById('themeSelector');
+        const body = document.body;
+
+        // Function to run code
+        const runCode = async () => {
+            const language = languageSelector.value;
+            const code = editor.value;
+
+            if (language === 'html') {
+                // Render HTML code directly in the output
+                const iframe = document.createElement('iframe');
+                outputDiv.innerHTML = ''; // Clear previous output
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                outputDiv.appendChild(iframe);
+                const doc = iframe.contentWindow.document;
+                doc.open();
+                doc.write(code);
+                doc.close();
+            } else {
+                // Send code to Judge0 API for execution
+                outputDiv.textContent = "Running code... Please wait.";
+                try {
+                    const languageMap = {
+                        python: 71,
+                        java: 62,
+                        c: 50,
+                        cpp: 54,
+                        csharp: 51
+                    };
+                    const languageId = languageMap[language];
+
+                    const response = await fetch('https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-RapidAPI-Key': 'YOUR_RAPIDAPI_KEY', // Replace with your RapidAPI key
+                            'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com'
+                        },
+                        body: JSON.stringify({
+                            source_code: code,
+                            language_id: languageId
+                        })
+                    });
+
+                    const result = await response.json();
+                    outputDiv.textContent = result.stdout || result.stderr || "No output.";
+                } catch (error) {
+                    outputDiv.textContent = "Error: " + error.message;
+                }
+            }
+        };
+
+        // Function to change theme
+        const changeTheme = (theme) => {
+            body.className = theme;
+        };
+
+        // Add event listeners
+        runButton.addEventListener('click', runCode);
+        themeSelector.addEventListener('change', (e) => changeTheme(e.target.value));
+    </script>
+</body>
+</html>
